@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotion Detection</title>
+    <style>
+        /* General Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Body Styling */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            padding: 20px;
+        }
+
+        /* Header Styling */
+        h1 {
+            font-size: 2.5em;
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        /* Header Logout Button */
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: #ff4d4d;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background-color: #e43e3e;
+        }
+
+        /* Video Feed Container */
+        .video-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        /* Video Styling */
+        img {
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 800px;
+        }
+
+        /* Buttons Container */
+        .buttons-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .buttons-container button {
+            background-color: #4CAF50;
+            color: white;
+            font-size: 1.2em;
+            padding: 12px 20px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .buttons-container button:hover {
+            background-color: #45a049;
+        }
+
+        .buttons-container button:active {
+            transform: scale(0.98);
+        }
+
+        /* Table Styling */
+        table {
+            width: 100%;
+            margin-top: 30px;
+            border-collapse: collapse;
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        table th, table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        table th {
+            background-color: #4CAF50;
+            color: white;
+            font-size: 1.1em;
+        }
+
+        table tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        table td {
+            font-size: 1.1em;
+        }
+
+        /* Clear Detection Button */
+        .clear-btn {
+            background-color: #ff4d4d;
+            color: white;
+            font-size: 1.2em;
+            padding: 12px 20px;
+            margin: 20px 0;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .clear-btn:hover {
+            background-color: #e43e3e;
+        }
+
+        /* Responsive Table */
+        @media (max-width: 768px) {
+            table {
+                font-size: 0.9em;
+            }
+
+            img {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Logout Button -->
+    <a href="/logout" class="logout-btn">Logout</a>
+
+    <h1>Emotion Detection System</h1>
+    <div class="video-container">
+        <img src="/video_feed" alt="Video Feed">
+    </div>
+    <div class="buttons-container">
+        <button onclick="submitDetection('sad')">Submit Sad</button>
+        <button onclick="submitDetection('happy')">Submit Happy</button>
+        <button onclick="submitDetection('angry')">Submit Angry</button>
+        <button onclick="submitDetection('neutral')">Submit Neutral</button>
+    </div>
+    <h2>Recorded Detections</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Emotion</th>
+                <th>Timestamp</th>
+            </tr>
+        </thead>
+        <tbody id="detection-table-body">
+            <!-- Rows will be populated here -->
+        </tbody>
+    </table>
+
+    <!-- Clear Detection Button -->
+    <button class="clear-btn" onclick="clearDetections()">Clear All Detections</button>
+
+    <script>
+        async function submitDetection(emotion) {
+            const timestamp = new Date().toISOString();
+            const response = await fetch('/submit_detection', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ emotion: emotion, timestamp: timestamp })
+            });
+            const result = await response.json();
+            if (result.status === 'success') {
+                alert(result.message);
+                loadDetections();
+            } else {
+                alert(result.message); // Error message
+            }
+        }
+
+        async function loadDetections() {
+            const response = await fetch('/detections');
+            const data = await response.json();
+            const tableBody = document.getElementById('detection-table-body');
+            tableBody.innerHTML = '';
+            data.forEach((item, index) => {
+                const row = `<tr>
+                    <td>${index + 1}</td>
+                    <td>${item.emotion}</td>
+                    <td>${item.timestamp}</td>
+                </tr>`;
+                tableBody.innerHTML += row;
+            });
+        }
+
+        async function clearDetections() {
+            const confirmation = confirm('Are you sure you want to clear all detections?');
+            if (confirmation) {
+                const response = await fetch('/clear_detections', { method: 'DELETE' });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    alert(result.message);
+                    loadDetections();
+                } else {
+                    alert(result.message); // Error message
+                }
+            }
+        }
+
+        // Load existing detections when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDetections();
+        });
+    </script>
+</body>
+</html>
+
+
